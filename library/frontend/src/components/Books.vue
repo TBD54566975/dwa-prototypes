@@ -33,7 +33,7 @@ async function addBook() {
   data += `--${boundary}\r\n`;
   data += `content-disposition: form-data; name='message'\r\n`;
   data += `\r\n`;
-  data += `${JSON.stringify([message])}\r\n`;
+  data += `${JSON.stringify(message)}\r\n`;
 
   const mockBlockstore = { put() { }, get() { } };
   const chunker = importer([{ content: toBytes(messageData) }], mockBlockstore, { cidVersion: 1 });
