@@ -10,6 +10,11 @@
   },
   "dependencies": {
     "@heroicons/vue": "1.0.6",
+    "interface-blockstore": "2.0.3",
+    "ipfs-unixfs": "6.0.9",
+    "ipfs-unixfs-importer": "9.0.10",
+    "ipfs-unixfs-exporter": "7.0.11",
+    "multiformats": "9.6.4",
     "pinia": "2.0.16",
     "vue": "^3.2.37"
   },
