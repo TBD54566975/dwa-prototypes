@@ -9,13 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ipld/dag-pb": "2.1.16",
     "@heroicons/vue": "1.0.6",
     "interface-blockstore": "2.0.3",
     "ipfs-unixfs": "6.0.9",
     "ipfs-unixfs-importer": "9.0.10",
     "ipfs-unixfs-exporter": "7.0.11",
+    "blockstore-core": "1.0.5",
     "multiformats": "9.6.4",
     "pinia": "2.0.16",
+    "uuid": "8.3.2",
     "vue": "^3.2.37"
   },
   "devDependencies": {

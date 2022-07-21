@@ -1,5 +1,8 @@
 {
   "dependencies": {
+    "@ipld/dag-pb": "2.1.16",
+    "interface-blockstore": "2.0.3",
+    "multiformats": "9.6.4",
     "busboy": "1.6.0",
     "cors": "^2.8.5",
     "express": "4.18.1"

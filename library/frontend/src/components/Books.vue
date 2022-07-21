@@ -1,7 +1,7 @@
 <script setup>
-import { getDagCid, toBytes } from '../utils'
-import { importer } from 'ipfs-unixfs-importer';
+import { getDagCid, sendRequest, sleep } from '../utils';
 import { reactive } from 'vue';
+import { v4 as uuidv4 } from 'uuid';
 
 const newBook = reactive({
   name: '',
@@ -14,56 +14,46 @@ async function addBook() {
   const { name, author, description } = newBook;
   const messageData = { name, author, description };
 
+  const messages = [];
+
   const dataCid = await getDagCid(messageData);
-  const message = {
+  const bookMessage = {
     descriptor: {
+      dataCid: dataCid.toString(),
       method: 'CollectionsWrite',
+      protocol: 'Library',
+      recordId: uuidv4(),
       schema: 'https://schema.org/Book',
-      dataCid: dataCid.toString()
+    }
+  };
+
+  messages.push({ message: bookMessage, data: messageData });
+
+  const fileReader = new FileReader();
+  fileReader.readAsArrayBuffer(newBook.file);
+
+  while (fileReader.readyState !== FileReader.DONE) {
+    await sleep(100);
+  }
+
+  console.log('File Reading DONE!');
+
+  const fileData = fileReader.result;
+
+  console.log(fileData);
+  const fileCid = await getDagCid(fileData);
+  const fileMessage = {
+    descriptor: {
+      dataCid: fileCid.toString(),
+      method: 'CollectionsWrite',
+      protocol: 'Library',
+      recordId: uuidv4(),
     }
   }
 
-  const boundary = `${Date.now()}`;
+  messages.push({ message: fileMessage, data: fileData });
 
-  let data = `--${boundary}\r\n`;
-  data += `content-disposition: form-data; name='target'\r\n`;
-  data += `\r\n`;
-  data += 'did:jank:alice\r\n';
-
-  data += `--${boundary}\r\n`;
-  data += `content-disposition: form-data; name='message'\r\n`;
-  data += `\r\n`;
-  data += `${JSON.stringify(message)}\r\n`;
-
-  const mockBlockstore = { put() { }, get() { } };
-  const chunker = importer([{ content: toBytes(messageData) }], mockBlockstore, { cidVersion: 1 });
-
-  for await (let chunk of chunker) {
-    data += `--${boundary}\r\n`;
-    data += `content-disposition: form-data; name='message-data'; filename='${chunk.cid}'\r\n`;
-    data += `Content-Type: 'application/json'\r\n`
-    data += '\r\n';
-
-    data += `${chunk.unixfs.data}\r\n`;
-  }
-
-  data += `--${boundary}--`;
-
-  console.log(data);
-
-  const xhr = new XMLHttpRequest();
-
-  xhr.addEventListener('load', function (event) {
-    console.log('response status', this.status);
-  });
-
-  xhr.addEventListener('error', event => {
-    console.log('ruh roh. error', event);
-  });
-
-  xhr.open('POST', 'http://localhost:3000/')
-  xhr.setRequestHeader('Content-Type', `multipart/form-data; boundary=${boundary}`);
-  xhr.send(data);
+  const request = await sendRequest('did:jank:alice', messages);
 }
 
 function handleFileSelection(event) {
