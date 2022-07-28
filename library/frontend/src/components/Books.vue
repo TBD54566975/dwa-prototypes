@@ -39,8 +39,6 @@ async function addBook() {
   console.log('File Reading DONE!');
 
   const fileData = fileReader.result;
-
-  console.log(fileData);
   const fileCid = await getDagCid(fileData);
   const fileMessage = {
     descriptor: {
@@ -53,7 +51,8 @@ async function addBook() {
 
   messages.push({ message: fileMessage, data: fileData });
 
-  const request = await sendRequest('did:jank:alice', messages);
+  const resp = await sendRequest('did:jank:alice', messages);
+  console.log(resp.status);
 }
 
 function handleFileSelection(event) {

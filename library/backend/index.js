@@ -1,36 +1,44 @@
 const busboy = require('busboy');
 const cors = require('cors');
 const express = require('express');
-const Block = require('multiformats/block');
-const dagPb = require('@ipld/dag-pb');
-const { sha256 } = require('multiformats/hashes/sha2');
-const { base64url } = require('multiformats/bases/base64');
+const { CarBlockIterator } = require('@ipld/car');
 
 const app = express();
 app.use(cors());
 
-app.post('/', (req, res) => {
+app.post('/', (req, res, next) => {
+  const context = {};
   const bodyParser = busboy({ headers: req.headers });
 
   bodyParser.on('field', (name, val, info) => {
     console.log(`Field [${name}]: value: ${val}`);
+
+    if (name === 'target') {
+      context.target = val;
+      // example short-circuit if target is not a tenant
+      if (val !== 'did:janky:bob') {
+        req.unpipe(bodyParser);
+        next(new Error('kaka'));
+      }
+    } else if (name === 'message') {
+      context.message = JSON.parse(val);
+    }
   });
 
-  bodyParser.on('file', (name, file, info) => {
+  bodyParser.on('file', async (name, file, info) => {
     const { filename, encoding, mimeType } = info;
-    let fileSize = 0;
-    let whateva = '';
+    console.log(filename, encoding, mimeType);
 
-    file.on('data', (data) => {
-      whateva += data;
-      fileSize += data.length;
-    }).on('close', async () => {
-      console.log(`File [${name}][${filename}] done. Size ${fileSize}`);
+    // uncomment this if we want to start integrity checking from the root of the DAG
+    // for await (const block of unpackStream(file)) {
+    //   console.log(block);
+    // }
 
-      const bytes = base64url.baseDecode(whateva);
-      const block = await Block.decode({ bytes: bytes, codec: dagPb, hasher: sha256 });
-      console.log(filename, block.cid);
-    });
+    // blocks come in out of order.
+    const itr = await CarBlockIterator.fromIterable(file);
+    for await (let block of itr) {
+      // console.log(block);
+    }
   });
 
   bodyParser.on('close', () => {
@@ -39,6 +47,13 @@ app.post('/', (req, res) => {
   });
 
   req.pipe(bodyParser);
+});
+
+app.use((err, req, res, next) => {
+  // this error handler will get triggered when we unpipe from busboy if we short-circuit
+  res.status(401);
+  // MUST call next with the error otherwise the request will hang-a-lang.
+  next(err);
 });
 
 app.listen(3000, () => {
